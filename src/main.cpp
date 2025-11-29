@@ -2,21 +2,21 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "autons.hpp"
 
-pros::MotorGroup left_motor_group({11, -12, 13});  // left side motors front to back 
+pros::MotorGroup left_motor_group({-11, 12, -13});  // left side motors front to back 
 pros::MotorGroup right_motor_group({17, -19, 20}); // right side motors front to back
 
-pros::Motor intake({7}, pros::MotorGearset::blue);
+pros::Motor intake({-7}, pros::MotorGearset::blue);
 pros::Motor lwm({16}, pros::MotorGearset::blue);
 pros::Motor hood({6}, pros::MotorGearset::blue);
 
-pros::Rotation odom(20);
-pros::Imu imu(1);
+pros::Rotation odom(-8);
+pros::Imu imu(2);
 
-lemlib::TrackingWheel vertical_tracking_wheel(&odom, lemlib::Omniwheel::NEW_275, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&odom, lemlib::Omniwheel::NEW_275, -1.25);
 
 lemlib::Drivetrain drivetrain(&left_motor_group, // left motor group
                               &right_motor_group, // right motor group
-                              12, // 12 inch track width
+                              12.75, // 12 inch track width
                               lemlib::Omniwheel::NEW_325, // using new 4" omnis
                               360, // drivetrain rpm is 360
                               2 // horizontal drift is 2 (for now)
@@ -26,7 +26,7 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
                             nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
                             nullptr, // horizontal tracking wheel 1
                             nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
-                            nullptr // inertial sensor
+                            &imu // inertial sensor
 );
 
 
@@ -34,25 +34,25 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 // lateral PID controller
 lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              3, // derivative gain (kD)
-                                              0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              5, // derivative gain (kD)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              20 // maximum acceleration (slew)
 );
 
 // angular PID controller
-lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(2.5, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              10, // derivative gain (kD)
+                                              3.8, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in degrees
                                               100, // small error range timeout, in milliseconds
                                               3, // large error range, in degrees
                                               500, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              20 // maximum acceleration (slew)
 );
 
 
@@ -67,7 +67,7 @@ lemlib::ExpoDriveCurve throttle_curve(3, // joystick deadband out of 127
 // input curve for steer input during driver control
 lemlib::ExpoDriveCurve steer_curve(3, // joystick deadband out of 127
                                   10, // minimum output where drivetrain will move out of 127
-                                  1.019 // expo curve gain
+                                  1.03 // expo curve gain
 );
 
 // create the chassis
@@ -104,7 +104,7 @@ void on_center_button() {
 // initialize function. Runs on program startup
 void initialize() {
     pros::lcd::initialize(); // initialize brain screen
-    chassis.calibrate(); // calibrate sensors
+    chassis.calibrate(); // calibrate sensors  
     // print position to brain screen
     pros::Task screen_task([&]() {
         while (true) {
@@ -148,32 +148,33 @@ void competition_initialize() {}
  * from where it left off.
  */
 
+
+
+
+
 void autonomous() {
-	pidTune();
+	// pidLateralTune();
+    // pidAngularTune();
     // autoRight();
     // autoLeft();
-    // autoLLG();
-    // autoRLG();
-    // sawpLeft();
-    // autoSkills();
+    // sawpRight();
+    autoSkills();
 
 };
-
-
 
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 void intke() {
-	if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
 		intake.move(127); // storing blocks
 		hood.move_velocity(0);
 	}
-	else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+	else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
 		intake.move(-127); // outtaking blocks through the front
 		hood.move(-127);
 	}
-	else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+	else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
 		intake.move(127);
 		hood.move(127);
 	}
@@ -184,11 +185,11 @@ void intke() {
 };
 
 void matchloader() {
-	if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
 		lwm.move(-127);
 		lwm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	}
-	else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
+	else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
 		lwm.move(127);
 		lwm.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	}
@@ -211,6 +212,14 @@ void matchloader() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
+
+
+int min(int a, int b) {
+    if (a > b)
+        return b;
+    else
+        return a;
+};
 
 void opcontrol() {
     // loop forever

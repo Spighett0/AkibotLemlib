@@ -1,17 +1,15 @@
 #include "main.h"
 #include "lemlib/api.hpp"
 
-void pidTune() {}
+void pidLateralTune();
 
-void autoRight() {}
+void pidAngularTune();
 
-void autoLeft() {}
+void autoRight();
 
-void autoLLG() {}
+void autoLeft();
 
-void autoRLG() {}
+void sawpRight();
 
-void sawpLeft() {}
-
-void autoSkills() {}
+void autoSkills();
 
