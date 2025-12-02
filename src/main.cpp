@@ -7,7 +7,7 @@ pros::MotorGroup right_motor_group({17, -19, 20}); // right side motors front to
 
 pros::Motor intake({-7}, pros::MotorGearset::blue);
 pros::Motor lwm({16}, pros::MotorGearset::blue);
-pros::Motor hood({6}, pros::MotorGearset::blue);
+pros::Motor hood({-6}, pros::MotorGearset::blue);
 
 pros::Rotation odom(-8);
 pros::Imu imu(2);
